@@ -150,7 +150,7 @@ from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
     'check_overdue_loans': {
-        'task': 'check_overdue_loans',
+        'task': 'library.tasks.check_overdue_loans',
         'schedule': crontab(hour=0, minute=0),
     },
 }
