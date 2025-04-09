@@ -1,9 +1,14 @@
 services:
+  pg_db:
     image: postgres:13
+    platform: linux/amd64
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: library_db
-      POSTGRES_USER: library_user
-      POSTGRES_PASSWORD: library_password
+      - POSTGRES_USER=library_user
+      - POSTGRES_PASSWORD=library_password
+      - POSTGRES_DB=library_db
+    command: -p 5438
     ports:
       - 5438:5438
     volumes:
