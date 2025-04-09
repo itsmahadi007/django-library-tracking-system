@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres
+    platform: linux/amd64
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    command: -p 5438    
+    volumes:
+      - postgres_database:/var/lib/postgresql/data
+    restart: always
+
+  redis:
+    image: redis:6
+    platform: linux/amd64
+    env_file:
+      - .env
+    command: --port ${REDIS_PORT}
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+
+  web:
+    build: .
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    environment:
+      - DJANGO_RUNNING_IN_DOCKER=True
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+
+  celery:
+    build: .
+    command: celery -A library_system worker -l info
+    environment:
+      - DJANGO_RUNNING_IN_DOCKER=True
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - web
+      - redis
+
+  celery_beat:
+    build: .
+    command: celery -A library_system beat -l info
+    environment:
+      - DJANGO_RUNNING_IN_DOCKER=True
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - web
+      - redis
+
+volumes:
+  postgres_database:

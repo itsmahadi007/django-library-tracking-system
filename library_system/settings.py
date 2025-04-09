@@ -3,6 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
+running_in_docker = os.environ.get("DJANGO_RUNNING_IN_DOCKER", "False")
 
 # Base Directory
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -62,15 +63,38 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'library_system.wsgi.application'
 
+if running_in_docker == "False":
+    # print("Using local DB")
+    # Database settings
+    DB_HOST = "localhost"
+    DB_PORT = "5432"
+    DB_NAME = "django_tracking"
+    DB_USER = "postgres"
+    DB_PASSWORD = "1516"
+    # Redis settings
+    REDIS_HOST = "localhost"
+    REDIS_PORT = "6379"
+else:
+    # Database settings
+    # print("Running on Docker")
+    DB_HOST = os.getenv("DB_HOST")
+    DB_PORT = os.getenv("DB_PORT")
+    DB_NAME = os.getenv("DB_NAME")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASSWORD = os.getenv("DB_PASSWORD")
+    # Redis settings
+    REDIS_HOST = os.getenv("REDIS_HOST")
+    REDIS_PORT = os.getenv("REDIS_PORT")
+
 # Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'library_db'),
-        'USER': os.getenv('POSTGRES_USER', 'library_user'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'library_password'),
-        'HOST': os.getenv('DB_HOST', 'db'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASSWORD,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
     }
 }
 
@@ -106,8 +130,8 @@ REST_FRAMEWORK = {
 }
 
 # Celery Configuration
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
