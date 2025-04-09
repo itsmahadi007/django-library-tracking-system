@@ -56,10 +56,17 @@ touch .env
 #### 📌 **Content of `.env`**
 ```env
 DEBUG=1
-DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
-DATABASE_URL=postgres://library_user:library_password@db:5432/library_db
-CELERY_BROKER_URL=redis://redis:6379/0
-CELERY_RESULT_BACKEND=redis://redis:6379/0
+DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 0.0.0.0
+# Database configuration
+DB_HOST=pg_db
+DB_NAME=library_db
+DB_USER=library_user
+DB_PASSWORD=library_password
+DB_PORT=5438
+# Redis configuration
+REDIS_HOST=redis
+REDIS_PORT=6380
+
 SECRET_KEY=your-secret-key
 DEFAULT_FROM_EMAIL=admin@library.com
 ```
