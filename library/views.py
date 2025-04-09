@@ -17,13 +17,9 @@ class AuthorViewSet(viewsets.ModelViewSet):
 
 
 class BookViewSet(viewsets.ModelViewSet):
-    queryset = Book.objects.select_related("author").all()
+    queryset = Book.objects.select_related("author").all() 
     serializer_class = BookSerializer
     pagination_class = CustomPagination
-
-    def get_queryset(self):
-        queryset = Book.objects.select_related("author").all()
-        return queryset
 
     @action(detail=True, methods=['post'])
     def loan(self, request, pk=None):
@@ -60,6 +56,25 @@ class BookViewSet(viewsets.ModelViewSet):
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
+    
+    @action(detail=False, methods=['get'])
+    def top_active(self, request):
+        # Get top 5 members with most active loans
+        top_members = Member.objects.annotate(
+            active_loans=Count('loans', filter=models.Q(loans__is_returned=False))
+        ).order_by('-active_loans')[:5]
+        
+        # Format the response
+        result = []
+        for member in top_members:
+            result.append({
+                'id': member.id,
+                'username': member.user.username,
+                'email': member.user.email,
+                'active_loans': member.active_loans
+            })
+        
+        return Response(result)
 
 
 class LoanViewSet(viewsets.ModelViewSet):
@@ -69,9 +84,18 @@ class LoanViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def extend_due_date(self, request, pk=None):
         loan = self.get_object()
-        additional_days = request.data.get('additional_days') or None
+        try:
+            additional_days = int(request.data.get('additional_days', 7))
+            if additional_days <= 0:
+                return Response({'error': 'Additional days must be a positive number'}, 
+                               status=status.HTTP_400_BAD_REQUEST)
+                
+            loan.due_date += timedelta(days=additional_days)
+            loan.save()
+            
+            return Response(LoanSerializer(loan).data, status=status.HTTP_200_OK)
+        except (ValueError, TypeError):
+            return Response({'error': 'Invalid value for additional_days'}, 
+                           status=status.HTTP_400_BAD_REQUEST)
 
-        loan.due_date += timedelta(days=additional_days)
-        loan.save()
 
-        return Response(LoanSerializer(loan).data, status=status.HTTP_200_OK)
